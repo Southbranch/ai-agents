@@ -2,7 +2,7 @@
 
 header('Content-Type: application/json');
 
-$serverVersion = '1.1.0'; // Increment for every deployed code change.
+$serverVersion = '1.2.1'; // Increment for every deployed code change.
 $stateFile = __DIR__ . '/agent_state.json';
 
 function rpcError($id, int $code, string $message): void
@@ -24,7 +24,7 @@ if ($method === 'initialize') {
     $result = [
         'protocolVersion' => '2025-06-18',
         'capabilities' => ['tools' => (object) []],
-        'serverInfo' => ['name' => 'avanza-poc', 'version' => $serverVersion],
+        'serverInfo' => ['name' => 'my-finance', 'version' => $serverVersion],
     ];
 } elseif ($method === 'tools/list') {
     // Tool descriptions and schemas guide the model's tool selection.
@@ -36,27 +36,27 @@ if ($method === 'initialize') {
             'inputSchema' => ['type' => 'object', 'properties' => (object) []],
         ],
         [
-            'name' => 'search_instruments',
+            'name' => 'avanza_search_instruments',
             'description' => 'Search for stocks by name, ticker, or ISIN. Returns separate matches for share classes such as Class A and Class B.',
             'inputSchema' => ['type' => 'object', 'properties' => ['query' => ['type' => 'string', 'minLength' => 1]], 'required' => ['query']],
         ],
         [
-            'name' => 'get_quote',
+            'name' => 'avanza_get_quote',
             'description' => 'Get the current stock price from Avanza.',
             'inputSchema' => ['type' => 'object', 'properties' => ['instrument_id' => $idSchema], 'required' => ['instrument_id']],
         ],
         [
-            'name' => 'get_stock_info',
+            'name' => 'avanza_get_stock_info',
             'description' => 'Get company information, share class, and key metrics from Avanza.',
             'inputSchema' => ['type' => 'object', 'properties' => ['instrument_id' => $idSchema], 'required' => ['instrument_id']],
         ],
         [
-            'name' => 'get_dividends',
+            'name' => 'avanza_get_dividends',
             'description' => 'Get historical dividends for a stock from Avanza.',
             'inputSchema' => ['type' => 'object', 'properties' => ['instrument_id' => $idSchema], 'required' => ['instrument_id']],
         ],
         [
-            'name' => 'get_history',
+            'name' => 'avanza_get_history',
             'description' => 'Get historical stock prices from Avanza.',
             'inputSchema' => [
                 'type' => 'object',
@@ -68,7 +68,7 @@ if ($method === 'initialize') {
             ],
         ],
         [
-            'name' => 'get_options',
+            'name' => 'avanza_get_options',
             'description' => 'Get the option chain for a stock. Set expiry to YYYY-MM-DD to return all strikes for the selected expiration date.',
             'inputSchema' => [
                 'type' => 'object',
@@ -80,8 +80,8 @@ if ($method === 'initialize') {
             ],
         ],
         [
-            'name' => 'get_option_details',
-            'description' => 'Get an option\'s Greeks (delta, gamma, theta, vega, and rho), theoretical price, implied volatility, and order book. instrument_id is the option orderbookId returned by get_options.',
+            'name' => 'avanza_get_option_details',
+            'description' => 'Get an option\'s Greeks (delta, gamma, theta, vega, and rho), theoretical price, implied volatility, and order book. instrument_id is the option orderbookId returned by avanza_get_options.',
             'inputSchema' => ['type' => 'object', 'properties' => ['instrument_id' => $idSchema], 'required' => ['instrument_id']],
         ],
         [
@@ -158,11 +158,11 @@ if ($method === 'initialize') {
         exit;
     }
 
-    $headers = "Accept: application/json\r\nUser-Agent: Mozilla/5.0\r\n";
+    $avanzaHeaders = "Accept: application/json\r\nUser-Agent: Mozilla/5.0\r\n";
 
     if ($name === 'get_server_info') {
-        $response = json_encode(['name' => 'avanza-poc', 'version' => $serverVersion]);
-    } elseif ($name === 'search_instruments') {
+        $response = json_encode(['name' => 'my-finance', 'version' => $serverVersion]);
+    } elseif ($name === 'avanza_search_instruments') {
         $query = trim($arguments['query'] ?? '');
         if ($query === '') {
             echo json_encode(['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => -32602, 'message' => 'Invalid query']]);
@@ -170,7 +170,7 @@ if ($method === 'initialize') {
         }
         $url = 'https://www.avanza.se/_api/search/filtered-search';
         $payload = json_encode(['query' => $query, 'instrumentTypes' => ['STOCK'], 'limit' => 10]);
-        $context = ['http' => ['method' => 'POST', 'header' => $headers . "Content-Type: application/json\r\n", 'content' => $payload]];
+        $context = ['http' => ['method' => 'POST', 'header' => $avanzaHeaders . "Content-Type: application/json\r\n", 'content' => $payload]];
         $search = json_decode(file_get_contents($url, false, stream_context_create($context)), true);
         $search['hits'] = array_values(array_filter($search['hits'] ?? [], fn($hit) => ($hit['type'] ?? '') === 'STOCK'));
         $response = json_encode($search);
@@ -182,17 +182,17 @@ if ($method === 'initialize') {
         }
     }
 
-    if ($name === 'get_quote') {
+    if ($name === 'avanza_get_quote') {
         $url = "https://www.avanza.se/_api/market-guide/stock/$instrumentId/quote";
-        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $headers]]));
-    } elseif ($name === 'get_stock_info') {
+        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $avanzaHeaders]]));
+    } elseif ($name === 'avanza_get_stock_info') {
         $url = "https://www.avanza.se/_api/market-guide/stock/$instrumentId";
-        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $headers]]));
-    } elseif ($name === 'get_dividends') {
+        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $avanzaHeaders]]));
+    } elseif ($name === 'avanza_get_dividends') {
         $url = "https://www.avanza.se/_api/market-guide/stock/$instrumentId/analysis";
-        $analysis = json_decode(file_get_contents($url, false, stream_context_create(['http' => ['header' => $headers]])), true);
+        $analysis = json_decode(file_get_contents($url, false, stream_context_create(['http' => ['header' => $avanzaHeaders]])), true);
         $response = json_encode(['dividendsByYear' => $analysis['dividendsByYear'] ?? []]);
-    } elseif ($name === 'get_history') {
+    } elseif ($name === 'avanza_get_history') {
         $period = $arguments['time_period'] ?? '';
         $periods = ['one_week', 'one_month', 'three_months', 'this_year', 'one_year', 'three_years', 'five_years'];
         if (!in_array($period, $periods, true)) {
@@ -200,11 +200,11 @@ if ($method === 'initialize') {
             exit;
         }
         $url = "https://www.avanza.se/_api/price-chart/stock/$instrumentId?timePeriod=$period";
-        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $headers]]));
-    } elseif ($name === 'get_option_details') {
+        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $avanzaHeaders]]));
+    } elseif ($name === 'avanza_get_option_details') {
         $url = "https://www.avanza.se/_api/market-guide/option/$instrumentId/details";
-        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $headers]]));
-    } elseif ($name === 'get_options') {
+        $response = file_get_contents($url, false, stream_context_create(['http' => ['header' => $avanzaHeaders]]));
+    } elseif ($name === 'avanza_get_options') {
         $url = 'https://www.avanza.se/_api/market-option-future-forward-list/matrix';
         $expiry = $arguments['expiry'] ?? '';
         if ($expiry !== '') {
@@ -221,9 +221,9 @@ if ($method === 'initialize') {
             'limit' => $expiry === '' ? 20 : 100,
             'sortBy' => ['field' => 'strikePrice', 'order' => 'asc'],
         ]);
-        $context = ['http' => ['method' => 'POST', 'header' => $headers . "Content-Type: application/json\r\n", 'content' => $payload]];
+        $context = ['http' => ['method' => 'POST', 'header' => $avanzaHeaders . "Content-Type: application/json\r\n", 'content' => $payload]];
         $response = file_get_contents($url, false, stream_context_create($context));
-    } elseif (!in_array($name, ['get_server_info', 'search_instruments'], true)) {
+    } elseif (!in_array($name, ['get_server_info', 'avanza_search_instruments'], true)) {
         echo json_encode(['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => -32601, 'message' => 'Tool not found']]);
         exit;
     }

@@ -3,7 +3,7 @@
 // Public proxy so web chat clients without MCP support can reach the MCP server via plain HTTPS/JSON.
 header('Content-Type: application/json; charset=utf-8');
 
-$MCP_URL = 'https://adduco.se/api/mcp.php';
+$MCP_URL = 'https://adduco.se/api/finance-mcp.php';
 $ALLOWED_METHODS = ['initialize', 'tools/list', 'tools/call'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
