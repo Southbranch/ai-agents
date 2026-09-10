@@ -55,14 +55,32 @@ function callMcp(string $endpoint, string $tool, array $arguments = []): array
     return $result;
 }
 
+function callMcpWithRetry(string $endpoint, string $tool, array $arguments = []): array
+{
+    $lastError = null;
+
+    for ($attempt = 1; $attempt <= 3; $attempt++) {
+        try {
+            return callMcp($endpoint, $tool, $arguments);
+        } catch (Throwable $error) {
+            $lastError = $error;
+            if ($attempt < 3) {
+                sleep(5);
+            }
+        }
+    }
+
+    throw new RuntimeException($tool . ' failed after 3 attempts: ' . $lastError?->getMessage());
+}
+
 try {
     $endpoint = getenv('MCP_ENDPOINT');
     if ($endpoint === false || filter_var($endpoint, FILTER_VALIDATE_URL) === false) {
         throw new RuntimeException('MCP_ENDPOINT must contain a valid URL');
     }
 
-    $server = callMcp($endpoint, 'get_server_info');
-    $quote = callMcp($endpoint, 'avanza_get_quote', [
+    $server = callMcpWithRetry($endpoint, 'get_server_info');
+    $quote = callMcpWithRetry($endpoint, 'avanza_get_quote', [
         'instrument_id' => SWEDBANK_A_INSTRUMENT_ID,
     ]);
 
