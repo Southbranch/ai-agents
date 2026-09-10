@@ -2,6 +2,9 @@ name: Finance POC
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '30 16 * * *'
       timezone: 'Europe/Stockholm'
@@ -24,6 +27,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+
+      - name: Check MCP endpoint
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -H 'Content-Type: application/json' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_server_info","arguments":{}}}' \
+            "$MCP_ENDPOINT"
 
       - name: Run Finance POC
         run: php agents/finance/run.php
