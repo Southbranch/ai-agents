@@ -18,22 +18,55 @@ function callMcp(string $endpoint, string $tool, array $arguments = []): array
         ],
     ], JSON_THROW_ON_ERROR);
 
-    $context = stream_context_create(['http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: application/json\r\nAccept: application/json\r\nUser-Agent: finance-poc/1.0\r\n",
-        'content' => $payload,
-        'ignore_errors' => true,
-        'timeout' => 30,
-    ]]);
+    if (function_exists('curl_init')) {
+        $handle = curl_init($endpoint);
+        if ($handle === false) {
+            throw new RuntimeException("Could not initialize HTTP client for $tool");
+        }
 
-    $response = file_get_contents($endpoint, false, $context);
-    if ($response === false) {
-        throw new RuntimeException("Could not reach MCP endpoint for $tool");
-    }
+        curl_setopt_array($handle, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'User-Agent: finance-poc/1.0',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30,
+        ]);
 
-    $statusLine = $http_response_header[0] ?? '';
-    if (!preg_match('/\s2\d{2}\s/', $statusLine)) {
-        throw new RuntimeException("MCP endpoint returned $statusLine for $tool");
+        $response = curl_exec($handle);
+        $statusCode = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $curlError = curl_error($handle);
+        curl_close($handle);
+
+        if ($response === false) {
+            throw new RuntimeException("Could not reach MCP endpoint for $tool: $curlError");
+        }
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new RuntimeException("MCP endpoint returned HTTP $statusCode for $tool");
+        }
+    } else {
+        $context = stream_context_create(['http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nAccept: application/json\r\nUser-Agent: finance-poc/1.0\r\n",
+            'content' => $payload,
+            'ignore_errors' => true,
+            'timeout' => 30,
+        ]]);
+
+        $response = file_get_contents($endpoint, false, $context);
+        if ($response === false) {
+            throw new RuntimeException("Could not reach MCP endpoint for $tool");
+        }
+
+        $statusLine = $http_response_header[0] ?? '';
+        if (!preg_match('/\s2\d{2}\s/', $statusLine)) {
+            throw new RuntimeException("MCP endpoint returned $statusLine for $tool");
+        }
     }
 
     $rpcResponse = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
