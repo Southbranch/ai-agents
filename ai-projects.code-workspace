@@ -1,11 +1,11 @@
 {
 	"folders": [
 		{
-			"path": "finance"
-		},
-		{
-			"path": "boats"
+			"name": "ai-agents",
+			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"stm32cube-ide-clangd.path": "cube"
+	}
 }
