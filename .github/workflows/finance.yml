@@ -3,7 +3,7 @@ name: Finance POC
 on:
   workflow_dispatch:
   schedule:
-    - cron: '22 16 * * *'
+    - cron: '30 16 * * *'
       timezone: 'Europe/Stockholm'
 
 permissions:
