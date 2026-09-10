@@ -3,7 +3,7 @@ name: Finance POC
 on:
   workflow_dispatch:
   schedule:
-    - cron: '25 15 * * *'
+    - cron: '40 15 * * *'
 
 permissions:
   contents: read
