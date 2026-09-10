@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      MCP_ENDPOINT: ${{ vars.MCP_ENDPOINT }}
+      MCP_ENDPOINT: https://adduco.se/finance/finance-mcp.php
 
     steps:
       - name: Check out repository
