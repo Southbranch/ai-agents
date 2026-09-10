@@ -1,5 +1,6 @@
 name: Finance POC
 
+# touched to re-register schedule triggers after run history was cleared
 on:
   workflow_dispatch:
   schedule:
