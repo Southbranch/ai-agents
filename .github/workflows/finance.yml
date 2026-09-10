@@ -41,10 +41,26 @@ jobs:
           script: |
             const fs = require('fs');
             const body = fs.existsSync('result.txt') ? fs.readFileSync('result.txt', 'utf8') : 'No output captured.';
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              creator: 'github-actions[bot]'
+            });
+            for (const issue of openIssues) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Finance POC #${context.runNumber} – ${new Date().toISOString()}`,
+              title: `Finance POC #${context.runNumber}`,
               body: '```\n' + body + '\n```',
               assignees: [context.repo.owner]
             });
