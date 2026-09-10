@@ -2,11 +2,8 @@ name: Finance POC
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '30 16 * * *'
       timezone: 'Europe/Stockholm'
 
 permissions:
@@ -22,14 +19,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Print schedule diagnostics
-        run: |
-          echo "event=${{ github.event_name }}"
-          echo "sha=${{ github.sha }}"
-          echo "ref=${{ github.ref }}"
-          echo "schedule=${{ github.event.schedule }}"
-          date -u
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2

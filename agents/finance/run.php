@@ -20,7 +20,7 @@ function callMcp(string $endpoint, string $tool, array $arguments = []): array
 
     $context = stream_context_create(['http' => [
         'method' => 'POST',
-        'header' => "Content-Type: application/json\r\nAccept: application/json\r\n",
+        'header' => "Content-Type: application/json\r\nAccept: application/json\r\nUser-Agent: finance-poc/1.0\r\n",
         'content' => $payload,
         'ignore_errors' => true,
         'timeout' => 30,
