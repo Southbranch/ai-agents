@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   finance:
@@ -29,4 +30,19 @@ jobs:
           extensions: curl
 
       - name: Run Finance POC
-        run: php agents/finance/run.php
+        id: finance
+        run: php agents/finance/run.php | tee result.txt
+
+      - name: Create issue with result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.existsSync('result.txt') ? fs.readFileSync('result.txt', 'utf8') : 'No output captured.';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Finance POC #${context.runNumber} – ${new Date().toISOString()}`,
+              body: '```\n' + body + '\n```'
+            });
