@@ -1,4 +1,4 @@
-name: Finance POC
+name: MyFinancePOC
 
 # touched to re-register schedule triggers after run history was cleared
 on:
